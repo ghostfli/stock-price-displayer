@@ -14,3 +14,6 @@ add_executable(StockPriceDisplayer
 
 target_include_directories(StockPriceDisplayer PRIVATE src)
 target_link_libraries(StockPriceDisplayer CURL::libcurl)
+
+add_executable(test_sma tests/test_sma.cpp)
+target_include_directories(test_sma PRIVATE src)

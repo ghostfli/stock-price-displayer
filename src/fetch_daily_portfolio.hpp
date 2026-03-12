@@ -27,14 +27,18 @@ Portfolio fetchDailyPortfolio(CURL* curl, CURLcode& res, const std::string& apiK
     Portfolio portfolio;
 
     for (const std::string& symbol : symbols) {
+        // Fetch daily time series data for this symbol
         std::string readBuffer;
         AlphaVantageTimeSeriesClientDaily client(apiKey, symbol);
 
         curl_easy_reset(curl);
+        // Set CURL options for this request
         curl_easy_setopt(curl, CURLOPT_URL, client.url.c_str());
+        // Set up callback to capture response data
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+        // Pass the string to hold the response data to the callback
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-
+        // Perform the request
         res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             std::cerr << "CURL error for " << symbol << ": " << curl_easy_strerror(res) << std::endl;
@@ -52,6 +56,7 @@ Portfolio fetchDailyPortfolio(CURL* curl, CURLcode& res, const std::string& apiK
             continue;
         }
 
+        // Parse the JSON response into TimeSeriesData
         TimeSeriesData tsData = TimeSeriesData::fromJSON(jsonData, symbol);
         if (tsData.bars.empty()) {
             std::cerr << "No data found for " << symbol << std::endl;
