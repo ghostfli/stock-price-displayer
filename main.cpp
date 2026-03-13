@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 #include <cstdlib>
@@ -8,22 +9,26 @@
 #include "src/analysis/sma.hpp"
 
 int main() {
-    //get the API key from environment variable
     const char* apiKeyEnv = std::getenv("AV_API_KEY");
     if (!apiKeyEnv) {
         std::cerr << "Error: AV_API_KEY environment variable not set." << std::endl;
         return 1;
     }
-    //Set API key from environment variable
     const std::string apiKey = apiKeyEnv;
-    //Initialize CURL
-    CURL* curl = curl_easy_init();
-    CURLcode res;
 
-    if (curl) {
-        //Fetch portfolio data for AAPL and IBM, then calculate and print SMAs
-        Portfolio portfolio = fetchDailyPortfolio(curl, res, apiKey, {"AAPL", "IBM"});
-        curl_easy_cleanup(curl);
+    // unique_ptr ensures curl_easy_cleanup is always called, even if an exception is thrown
+    auto curl = std::unique_ptr<CURL, decltype(&curl_easy_cleanup)>(
+                    curl_easy_init(), curl_easy_cleanup);
+    CURLcode res = CURLE_OK;
+    
+    //Early check if CURL was initialized successfully
+    if (!curl) {
+        std::cerr << "Error: failed to initialize CURL." << std::endl;
+        return 1;
+    }
+
+    try {
+        Portfolio portfolio = fetchDailyPortfolio(curl.get(), res, apiKey, {"AAPL", "IBM"});
 
         for (auto& [symbol, position] : portfolio.positions) {
             auto sma20  = sma(position.tsData, 20);
@@ -39,6 +44,9 @@ int main() {
                 std::cout << "\n";
             }
         }
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
 
     return 0;
