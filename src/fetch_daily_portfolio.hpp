@@ -45,7 +45,13 @@ Portfolio fetchDailyPortfolio(CURL* curl, CURLcode& res, const std::string& apiK
             continue;
         }
 
-        auto jsonData = nlohmann::json::parse(readBuffer);
+        nlohmann::json jsonData;
+        try {
+            jsonData = nlohmann::json::parse(readBuffer);
+        } catch (const nlohmann::json::parse_error& e) {
+            std::cerr << "Invalid JSON for " << symbol << ": " << e.what() << std::endl;
+            continue;
+        }
 
         // Check for API rate limit or error messages
         if (jsonData.contains("Note") || jsonData.contains("Information")) {
